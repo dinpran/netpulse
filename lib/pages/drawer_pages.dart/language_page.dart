@@ -17,9 +17,23 @@ class _LanguagePageState extends State<LanguagePage> {
   String fullName = "";
   String email = "";
 
+  // List of languages with their flag emojis (using Unicode for simplicity)
+  final List<Map<String, String>> languages = [
+    {"name": "United States", "flag": "🇺🇸"},
+    {"name": "Russian", "flag": "🇷🇺"},
+    {"name": "United Kingdom", "flag": "🇬🇧"},
+    {"name": "Indian", "flag": "🇮🇳"},
+    {"name": "Japanese", "flag": "🇯🇵"},
+    {"name": "Korean", "flag": "🇰🇷"},
+    {"name": "Chinese", "flag": "🇨🇳"},
+    {"name": "Spanish", "flag": "🇪🇸"},
+    {"name": "German", "flag": "🇩🇪"},
+    {"name": "Turkish", "flag": "🇹🇷"},
+    {"name": "Italian", "flag": "🇮🇹"},
+  ];
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getUserData();
   }
@@ -42,8 +56,8 @@ class _LanguagePageState extends State<LanguagePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          "Language",
+        title: const Text(
+          "NetPulse",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -51,110 +65,139 @@ class _LanguagePageState extends State<LanguagePage> {
       drawer: Drawer(
         child: ListView(
           children: [
-            SizedBox(
-              height: 40,
-            ),
-            // Icon(
-            //   Icons.person,
-            //   size: 150,
-            // ),
-            // SizedBox(
-            //   height: 20,
-            // ),
-            // Text(
-            //   "${fullName}",
-            //   textAlign: TextAlign.center,
-            // ),
+            const SizedBox(height: 40),
             ListTile(
-              leading: CircleAvatar(
+              leading: const CircleAvatar(
                 radius: 30,
                 backgroundImage: AssetImage("assets/login.png"),
               ),
-              title: Text("${fullName}"),
-              subtitle: Text("${email}"),
+              title: Text(fullName),
+              subtitle: Text(email),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {},
             ),
             ListTile(
-              leading: Icon(Icons.home),
-              title: Text("Home"),
+              leading: const Icon(Icons.home),
+              title: const Text("Home"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                   builder: (context) {
-                    return HomePage();
+                    return const HomePage();
                   },
                 ));
               },
             ),
             ListTile(
-              leading: Icon(Icons.info),
-              title: Text("About"),
+              leading: const Icon(Icons.info),
+              title: const Text("About"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                   builder: (context) {
-                    return AboutPage();
+                    return const AboutPage();
                   },
                 ));
               },
             ),
             ListTile(
-              leading: Icon(Icons.wifi),
-              title: Text("Internet Provider"),
+              leading: const Icon(Icons.wifi),
+              title: const Text("Internet Provider"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                   builder: (context) {
-                    return InternetProviderPage();
+                    return const InternetProviderPage();
                   },
                 ));
               },
             ),
             ListTile(
-              leading: Icon(Icons.history),
-              title: Text("History"),
+              leading: const Icon(Icons.history),
+              title: const Text("History"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                   builder: (context) {
-                    return HistoryPage();
+                    return const HistoryPage();
                   },
                 ));
               },
             ),
             ListTile(
-              leading: Icon(Icons.language),
-              title: Text("Language"),
+              leading: const Icon(Icons.language),
+              title: const Text("Language"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                   builder: (context) {
-                    return LanguagePage();
+                    return const LanguagePage();
                   },
                 ));
               },
             ),
             ListTile(
-              leading: Icon(Icons.settings),
-              title: Text("Settings"),
+              leading: const Icon(Icons.settings),
+              title: const Text("Settings"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                   builder: (context) {
-                    return SettingsPage();
+                    return const SettingsPage();
                   },
                 ));
               },
             ),
           ],
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Wrap(
+            spacing: 16.0,
+            runSpacing: 16.0,
+            children: languages.map((language) {
+              return SizedBox(
+                width: (MediaQuery.of(context).size.width - 48) / 2,
+                child: ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 16.0, horizontal: 16.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    elevation: 2,
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        language["flag"]!,
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          language["name"]!,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
         ),
       ),
     );

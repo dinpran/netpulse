@@ -48,9 +48,6 @@ class _HomePageState extends State<HomePage> {
         ),
         centerTitle: true,
       ),
-      body: Center(
-        child: Text("HomePage"),
-      ),
       drawer: Drawer(
         child: ListView(
           children: [

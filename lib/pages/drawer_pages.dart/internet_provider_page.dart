@@ -16,12 +16,28 @@ class InternetProviderPage extends StatefulWidget {
 class _InternetProviderPageState extends State<InternetProviderPage> {
   String fullName = "";
   String email = "";
+  String searchQuery = "";
+  final TextEditingController _searchController = TextEditingController();
+
+  // List of providers grouped by country
+  final Map<String, List<String>> providersByCountry = {
+    "Algeria": ["Algerie Telecom", "Djezzy", "Mobilis"],
+    "Angola": ["Unitel"],
+    "Argentina": ["Personal", "Telecentro", "IPlan"],
+    "Armenia": ["Telecom Armenia", "Viva", "Ucom"],
+    "Australia": ["Aussie Broadband", "iiNet", "NBN", "Optus", "Telstra"],
+    "Brazil": [],
+  };
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getUserData();
+    _searchController.addListener(() {
+      setState(() {
+        searchQuery = _searchController.text.toLowerCase();
+      });
+    });
   }
 
   getUserData() async {
@@ -39,11 +55,17 @@ class _InternetProviderPageState extends State<InternetProviderPage> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          "Internet Provide",
+        title: const Text(
+          "NetPulse",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -51,108 +73,207 @@ class _InternetProviderPageState extends State<InternetProviderPage> {
       drawer: Drawer(
         child: ListView(
           children: [
-            SizedBox(
-              height: 40,
-            ),
-            // Icon(
-            //   Icons.person,
-            //   size: 150,
-            // ),
-            // SizedBox(
-            //   height: 20,
-            // ),
-            // Text(
-            //   "${fullName}",
-            //   textAlign: TextAlign.center,
-            // ),
+            const SizedBox(height: 40),
             ListTile(
-              leading: CircleAvatar(
+              leading: const CircleAvatar(
                 radius: 30,
                 backgroundImage: AssetImage("assets/login.png"),
               ),
-              title: Text("${fullName}"),
-              subtitle: Text("${email}"),
+              title: Text(fullName),
+              subtitle: Text(email),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {},
             ),
             ListTile(
-              leading: Icon(Icons.home),
-              title: Text("Home"),
+              leading: const Icon(Icons.home),
+              title: const Text("Home"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                   builder: (context) {
-                    return HomePage();
+                    return const HomePage();
                   },
                 ));
               },
             ),
             ListTile(
-              leading: Icon(Icons.info),
-              title: Text("About"),
+              leading: const Icon(Icons.info),
+              title: const Text("About"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                   builder: (context) {
-                    return AboutPage();
+                    return const AboutPage();
                   },
                 ));
               },
             ),
             ListTile(
-              leading: Icon(Icons.wifi),
-              title: Text("Internet Provider"),
+              leading: const Icon(Icons.wifi),
+              title: const Text("Internet Provider"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                   builder: (context) {
-                    return InternetProviderPage();
+                    return const InternetProviderPage();
                   },
                 ));
               },
             ),
             ListTile(
-              leading: Icon(Icons.history),
-              title: Text("History"),
+              leading: const Icon(Icons.history),
+              title: const Text("History"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                   builder: (context) {
-                    return HistoryPage();
+                    return const HistoryPage();
                   },
                 ));
               },
             ),
             ListTile(
-              leading: Icon(Icons.language),
-              title: Text("Language"),
+              leading: const Icon(Icons.language),
+              title: const Text("Language"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                   builder: (context) {
-                    return LanguagePage();
+                    return const LanguagePage();
                   },
                 ));
               },
             ),
             ListTile(
-              leading: Icon(Icons.settings),
-              title: Text("Settings"),
+              leading: const Icon(Icons.settings),
+              title: const Text("Settings"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                   builder: (context) {
-                    return SettingsPage();
+                    return const SettingsPage();
                   },
                 ));
               },
+            ),
+          ],
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: "Search",
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: const BorderSide(color: Colors.grey),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    // Placeholder for Compare functionality
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF6F61),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: const Text(
+                    "Compare",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: providersByCountry.entries.map((entry) {
+                    String country = entry.key;
+                    List<String> providers = entry.value;
+
+                    // Filter providers based on search query
+                    List<String> filteredProviders = providers
+                        .where((provider) =>
+                            provider.toLowerCase().contains(searchQuery) ||
+                            country.toLowerCase().contains(searchQuery))
+                        .toList();
+
+                    // Only show the country if it matches the search query or has matching providers
+                    if (filteredProviders.isNotEmpty ||
+                        country.toLowerCase().contains(searchQuery)) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            country,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          if (filteredProviders.isEmpty && providers.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.only(left: 16.0),
+                              child: Text(
+                                "No providers available",
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            )
+                          else
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: filteredProviders.map((provider) {
+                                return OutlinedButton(
+                                  onPressed: () {},
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(
+                                        color: Color(0xFFFF6F61)),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    provider,
+                                    style: const TextStyle(
+                                        color: Color(0xFFFF6F61)),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }).toList(),
+                ),
+              ),
             ),
           ],
         ),

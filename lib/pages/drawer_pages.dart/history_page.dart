@@ -43,7 +43,7 @@ class _HistoryPageState extends State<HistoryPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "History",
+          "NetPulse",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
