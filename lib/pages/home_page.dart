@@ -20,7 +20,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   bool _testInProgress = false;
   double _downloadSpeed = 0.0;
   double _uploadSpeed = 0.0;
@@ -31,10 +31,50 @@ class _HomePageState extends State<HomePage> {
   String fullName = "";
   String email = "";
 
+  late AnimationController _pulseController;
+  late AnimationController _gaugeController;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _gaugeAnimation;
+
   @override
   void initState() {
     super.initState();
     getUserData();
+
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+
+    _gaugeController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.1,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+
+    _gaugeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _gaugeController,
+      curve: Curves.elasticOut,
+    ));
+
+    _pulseController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _gaugeController.dispose();
+    super.dispose();
   }
 
   getUserData() async {
@@ -75,6 +115,9 @@ class _HomePageState extends State<HomePage> {
       _uploadProgress = '0';
     });
 
+    _pulseController.stop();
+    _gaugeController.reset();
+
     try {
       await _testDownloadSpeed();
       await _testUploadSpeed();
@@ -83,6 +126,8 @@ class _HomePageState extends State<HomePage> {
         _testCompleted = true;
         _testInProgress = false;
       });
+
+      _gaugeController.forward();
     } catch (e) {
       setState(() {
         _testInProgress = false;
@@ -91,6 +136,7 @@ class _HomePageState extends State<HomePage> {
       print('Speed test error: $e');
       _showError(
           'Speed test failed. Please check your internet connection and try again.');
+      _pulseController.repeat(reverse: true);
     }
   }
 
@@ -102,7 +148,7 @@ class _HomePageState extends State<HomePage> {
 
       for (int i = 0; i < _testUrls.length; i++) {
         setState(() {
-          _downloadProgress = ((i / _testUrls.length) * 100).toStringAsFixed(0);
+          _downloadProgress = ((i / _testUrls.length) * 100).toStringAsFixed(2);
         });
 
         try {
@@ -139,7 +185,6 @@ class _HomePageState extends State<HomePage> {
           client.close();
         } catch (e) {
           print('Download test ${i + 1} failed: $e');
-          // Continue with next test
           continue;
         }
       }
@@ -165,11 +210,9 @@ class _HomePageState extends State<HomePage> {
         _uploadProgress = '0';
       });
 
-      // Use a smaller test data size for better reliability
-      final testData = _generateTestData(1 * 1024 * 1024); // 1MB instead of 5MB
+      final testData = _generateTestData(1 * 1024 * 1024);
       final stopwatch = Stopwatch()..start();
 
-      // Try multiple upload endpoints for better reliability
       final uploadUrls = [
         'https://httpbin.org/post',
         'https://postman-echo.com/post',
@@ -227,7 +270,6 @@ class _HomePageState extends State<HomePage> {
 
       if (!success) {
         print('All upload attempts failed');
-        // Set a default upload speed to avoid showing error
         setState(() {
           _uploadSpeed = 0.0;
           _uploadProgress = '100';
@@ -241,7 +283,6 @@ class _HomePageState extends State<HomePage> {
         _uploadSpeed = 0.0;
         _uploadProgress = '100';
       });
-      // Don't throw error for upload failure, just log it
       print('Upload test failed, continuing without upload speed data');
     }
   }
@@ -259,8 +300,17 @@ class _HomePageState extends State<HomePage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text(message)),
+            ],
+          ),
+          backgroundColor: const Color(0xFFE53E3E),
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           duration: const Duration(seconds: 3),
         ),
       );
@@ -277,17 +327,28 @@ class _HomePageState extends State<HomePage> {
       _unitText = 'Mbps';
       _testCompleted = false;
     });
+
+    _gaugeController.reset();
+    _pulseController.repeat(reverse: true);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F3F0),
       appBar: AppBar(
         title: const Text(
           "NetPulse",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+            color: Color(0xFF2C2C2C),
+          ),
         ),
         centerTitle: true,
+        elevation: 0,
+        // backgroundColor: const Color(0xFFF5F3F0),
+        iconTheme: const IconThemeData(color: Color(0xFF2C2C2C)),
       ),
       drawer: Drawer(
         child: ListView(
@@ -344,8 +405,8 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text("History"),
+              leading: const Icon(Icons.help),
+              title: const Text("Help"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
@@ -385,311 +446,396 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      backgroundColor: const Color(0xFFF5E8D3),
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Circular "GO" button or gauge based on test state
-                if (!_testInProgress && !_testCompleted)
-                  GestureDetector(
-                    onTap: _startSpeedTest,
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFFE57373),
-                            Color(0xFFD32F2F),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'GO',
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                else if (_testInProgress)
-                  Column(
-                    children: [
-                      const SizedBox(
-                        width: 50,
-                        height: 50,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 4,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.black54),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        _downloadProgress != '100'
-                            ? 'Testing Download Speed...'
-                            : 'Testing Upload Speed...',
-                        style: const TextStyle(
-                          color: Colors.black54,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        _downloadProgress != '100'
-                            ? 'Download: $_downloadProgress%'
-                            : 'Upload: $_uploadProgress%',
-                        style: const TextStyle(
-                          color: Colors.black54,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  // Circular speed gauge
-                  Container(
-                    width: 250,
-                    height: 250,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Background circle
-                        Container(
-                          width: 250,
-                          height: 250,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.grey.shade200,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Progress circle
-                        Container(
-                          width: 250,
-                          height: 250,
-                          child: CircularProgressIndicator(
-                            value: _downloadSpeed > 0
-                                ? (_downloadSpeed / 100).clamp(0.0, 1.0)
-                                : 0.0,
-                            strokeWidth: 15,
-                            backgroundColor: Colors.transparent,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              _downloadSpeed > 50
-                                  ? const Color(0xFFFFD700) // Gold
-                                  : _downloadSpeed > 25
-                                      ? const Color(0xFFFFB347) // Orange-Gold
-                                      : const Color(0xFFFFA500), // Orange
-                            ),
-                          ),
-                        ),
-                        // Inner circle with speed text
-                        Container(
-                          width: 180,
-                          height: 180,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFFFFD700).withOpacity(0.1),
-                                const Color(0xFFFFA500).withOpacity(0.1),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                _downloadSpeed > 0
-                                    ? _downloadSpeed.toStringAsFixed(2)
-                                    : '0.00',
-                                style: const TextStyle(
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFB8860B), // Dark golden rod
-                                ),
-                              ),
-                              Text(
-                                _unitText,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Color(0xFFDAA520), // Golden rod
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                'Download',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade600,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                const SizedBox(height: 30),
-
-                // Restart button
-                if (_testCompleted)
-                  SizedBox(
-                    width: 120,
-                    height: 40,
-                    child: OutlinedButton.icon(
-                      onPressed: _reset,
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.grey, width: 1),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        backgroundColor: Colors.white,
-                      ),
-                      icon: const Icon(
-                        Icons.refresh,
-                        size: 18,
-                        color: Colors.black54,
-                      ),
-                      label: const Text(
-                        'Restart',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 30),
-
-                // Download and Upload cards
-                Row(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              Expanded(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildSpeedCard(
-                      'Download',
-                      _downloadSpeed,
-                      _unitText,
-                      _downloadProgress,
-                      Icons.download,
-                      Colors.green,
-                    ),
-                    const SizedBox(width: 20),
-                    _buildSpeedCard(
-                      'Upload',
-                      _uploadSpeed,
-                      _unitText,
-                      _uploadProgress,
-                      Icons.upload,
-                      Colors.orange,
-                    ),
+                    // Main Speed Test Circle
+                    _buildMainSpeedTest(),
+
+                    const SizedBox(height: 60),
+
+                    // Speed Cards
+                    _buildSpeedCards(),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildGaugeMarker(String label) {
+  Widget _buildModernDrawer() {
+    return Drawer(
+      child: Container(
+        color: const Color(0xFFF5F3F0),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            Container(
+              height: 200,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFD4A574), Color(0xFFB8926A)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                    ),
+                    child: const CircleAvatar(
+                      radius: 40,
+                      backgroundImage: AssetImage("assets/login.png"),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    fullName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    email,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            ..._buildDrawerItems(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildDrawerItems() {
+    final items = [
+      {'icon': Icons.home_outlined, 'title': 'Home', 'page': const HomePage()},
+      {'icon': Icons.info_outline, 'title': 'About', 'page': const AboutPage()},
+      {
+        'icon': Icons.wifi_outlined,
+        'title': 'Internet Provider',
+        'page': const InternetProviderPage()
+      },
+      {
+        'icon': Icons.history_outlined,
+        'title': 'History',
+        'page': const HistoryPage()
+      },
+      {
+        'icon': Icons.language_outlined,
+        'title': 'Language',
+        'page': const LanguagePage()
+      },
+      {
+        'icon': Icons.settings_outlined,
+        'title': 'Settings',
+        'page': const SettingsPage()
+      },
+    ];
+
+    return items
+        .map((item) => Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: item['title'] == 'Home'
+                    ? const Color(0xFFD4A574).withOpacity(0.1)
+                    : Colors.transparent,
+              ),
+              child: ListTile(
+                leading: Icon(
+                  item['icon'] as IconData,
+                  color: item['title'] == 'Home'
+                      ? const Color(0xFFD4A574)
+                      : const Color(0xFF4A5568),
+                  size: 24,
+                ),
+                title: Text(
+                  item['title'] as String,
+                  style: TextStyle(
+                    color: item['title'] == 'Home'
+                        ? const Color(0xFFD4A574)
+                        : const Color(0xFF2D3748),
+                    fontWeight: item['title'] == 'Home'
+                        ? FontWeight.w600
+                        : FontWeight.w500,
+                    fontSize: 16,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                        builder: (context) => item['page'] as Widget),
+                  );
+                },
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ))
+        .toList();
+  }
+
+  Widget _buildMainSpeedTest() {
+    if (!_testInProgress && !_testCompleted) {
+      return AnimatedBuilder(
+        animation: _pulseAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _pulseAnimation.value,
+            child: GestureDetector(
+              onTap: _startSpeedTest,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFD4A574), Color(0xFFB8926A)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFD4A574).withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Text(
+                    'GO',
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 4,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    } else if (_testInProgress) {
+      return _buildTestInProgress();
+    } else {
+      return _buildCompletedTest();
+    }
+  }
+
+  Widget _buildTestInProgress() {
+    return Container(
+      width: 220,
+      height: 220,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 200,
+            height: 200,
+            child: CircularProgressIndicator(
+              strokeWidth: 8,
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(Color(0xFFD4A574)),
+              backgroundColor: Colors.grey.shade200,
+            ),
+          ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                _downloadProgress != '100' ? Icons.download : Icons.upload,
+                size: 32,
+                color: const Color(0xFFD4A574),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _downloadProgress != '100' ? 'Download' : 'Upload',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2C2C2C),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${_downloadProgress != '100' ? _downloadProgress : _uploadProgress}%',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFD4A574),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompletedTest() {
     return Column(
       children: [
-        const Text(
-          '—',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.black54,
+        Container(
+          width: 220,
+          height: 220,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _downloadSpeed.toStringAsFixed(2),
+                  style: const TextStyle(
+                    fontSize: 42,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2C2C2C),
+                  ),
+                ),
+                Text(
+                  _unitText,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF888888),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Download',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF888888),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.black54,
+        const SizedBox(height: 30),
+        GestureDetector(
+          onTap: _reset,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFD4A574),
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFD4A574).withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: const Text(
+              'Test Again',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSpeedCard(
-    String label,
-    double speed,
-    String unit,
-    String progress,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildSpeedCards() {
+    return Row(
+      children: [
+        Expanded(
+            child: _buildSpeedCard('Download', _downloadSpeed, '( In Mbps )')),
+        const SizedBox(width: 20),
+        Expanded(child: _buildSpeedCard('Upload', _uploadSpeed, '( In Mbps )')),
+      ],
+    );
+  }
+
+  Widget _buildSpeedCard(String title, double speed, String subtitle) {
     return Container(
-      width: 120,
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: const Color(0xFFFAF8F5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFD4A574).withOpacity(0.3),
+          width: 1,
+        ),
       ),
       child: Column(
         children: [
           Text(
-            label,
+            title,
             style: const TextStyle(
-              color: Colors.black54,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF2C2C2C),
             ),
           ),
-          const SizedBox(height: 5),
-          const Text(
-            '(In Mbps)',
-            style: TextStyle(
-              color: Colors.black54,
-              fontSize: 10,
-            ),
-          ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 4),
           Text(
-            speed > 0 ? speed.toStringAsFixed(2) : '0.00',
+            subtitle,
             style: const TextStyle(
-              color: Colors.black,
-              fontSize: 24,
+              fontSize: 12,
+              color: Color(0xFF888888),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            speed > 0 ? speed.toStringAsFixed(2) : '0',
+            style: const TextStyle(
+              fontSize: 32,
               fontWeight: FontWeight.bold,
+              color: Color(0xFF2C2C2C),
             ),
           ),
         ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:netpulse/auth/login_page.dart';
 import 'package:netpulse/helper/helper_functions.dart';
+import 'package:netpulse/pages/admin_page.dart';
 import 'package:netpulse/pages/drawer_pages.dart/about_page.dart';
 import 'package:netpulse/pages/drawer_pages.dart/history_page.dart';
 import 'package:netpulse/pages/drawer_pages.dart/internet_provider_page.dart';
@@ -19,6 +20,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String fullName = "";
   String email = "";
   AuthService authService = AuthService();
+  bool isAdmin = false; // Add this variable to track admin status
 
   @override
   void initState() {
@@ -36,6 +38,8 @@ class _SettingsPageState extends State<SettingsPage> {
     HelperFunctions.getUserEmailKey().then((value) {
       setState(() {
         email = value!;
+        // Check if the user is admin based on email
+        isAdmin = (email == "purplemerit-admin1645@gmail.com");
       });
     });
   }
@@ -43,13 +47,32 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF5F5),
+      backgroundColor: const Color(0xFFF5F3F0),
       appBar: AppBar(
         title: Text(
           "NetPulse",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
+        actions: [
+          // Show admin icon only if user is admin
+          if (isAdmin)
+            IconButton(
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) {
+                    return AdminPage();
+                  },
+                ));
+              },
+              icon: Icon(
+                Icons.admin_panel_settings,
+                color:
+                    Colors.blue, // Optional: Add color to highlight admin icon
+              ),
+              tooltip: "Admin Panel", // Optional: Add tooltip
+            ),
+        ],
       ),
       drawer: Drawer(
         child: ListView(
@@ -106,8 +129,8 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text("History"),
+              leading: const Icon(Icons.help),
+              title: const Text("Help"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
@@ -144,6 +167,28 @@ class _SettingsPageState extends State<SettingsPage> {
                 ));
               },
             ),
+
+            // Optional: Add Admin Panel to drawer as well (only for admin)
+            if (isAdmin)
+              ListTile(
+                leading: const Icon(
+                  Icons.admin_panel_settings,
+                  color: Colors.blue,
+                ),
+                title: const Text(
+                  "Admin Panel",
+                  style: TextStyle(color: Colors.blue),
+                ),
+                selected: true,
+                selectedColor: Colors.blue,
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) {
+                      return const AdminPage();
+                    },
+                  ));
+                },
+              ),
           ],
         ),
       ),
@@ -153,13 +198,48 @@ class _SettingsPageState extends State<SettingsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Account Settings",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Account Settings",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  // Optional: Show admin badge in body as well
+                  if (isAdmin)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.admin_panel_settings,
+                            size: 16,
+                            color: Colors.blue,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "ADMIN",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 30),
 

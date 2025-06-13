@@ -125,7 +125,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             style: TextStyle(color: Colors.black),
                             children: [
                               TextSpan(
-                                text: "Sign Up",
+                                text: "Log In",
                                 style: TextStyle(color: Colors.orange),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {

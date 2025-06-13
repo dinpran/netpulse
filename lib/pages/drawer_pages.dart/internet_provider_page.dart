@@ -63,6 +63,7 @@ class _InternetProviderPageState extends State<InternetProviderPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F3F0),
       appBar: AppBar(
         title: const Text(
           "NetPulse",
@@ -125,8 +126,8 @@ class _InternetProviderPageState extends State<InternetProviderPage> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text("History"),
+              leading: const Icon(Icons.help),
+              title: const Text("Help"),
               selected: true,
               selectedColor: Colors.black,
               onTap: () {
